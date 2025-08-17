@@ -1,7 +1,7 @@
 pub mod decode;
 pub mod tile;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[repr(i32)]
 #[allow(clippy::upper_case_acronyms)]
 /// This is represented by HyCube as a byte.
@@ -38,9 +38,9 @@ pub enum OpCode {
     MOVC = 31,
 }
 
-#[derive(Debug)]
 /// This repersents a HyCube's instruction that is stored in its
 /// internal Memory Config.
+#[derive(Debug, Clone)]
 #[allow(non_snake_case)]
 pub struct HyIns {
     xB: XbarConfig,
@@ -58,7 +58,22 @@ pub struct HyIns {
     npb: bool,
 }
 
-#[derive(Debug)]
+impl Default for HyIns {
+    fn default() -> Self {
+        Self {
+            xB: Default::default(),
+            reg_we: Default::default(),
+            reg_no_bypass: Default::default(),
+            treg_we: Default::default(),
+            opcode: OpCode::NOP,
+            constant: Default::default(),
+            constValid: Default::default(),
+            npb: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 #[allow(clippy::upper_case_acronyms, non_camel_case_types)]
 pub enum XBarInput {
     EAST_I = 0,
@@ -81,8 +96,12 @@ pub enum Dir {
 
 type DataType = i32;
 type Memory = Vec<i8>;
+/// Config in time, see number 0,1,... in the Binary file..
+pub type Configs = Vec<Config>;
+/// [y][x]
+pub type Config = Vec<Vec<HyIns>>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct XbarConfig {
     p: XBarInput,
     i1: XBarInput,
@@ -91,4 +110,19 @@ struct XbarConfig {
     east_o: XBarInput,
     west_o: XBarInput,
     south_o: XBarInput,
+}
+
+impl Default for XbarConfig {
+    fn default() -> Self {
+        use XBarInput::INV;
+        Self {
+            p: INV,
+            i1: INV,
+            i2: INV,
+            north_o: INV,
+            east_o: INV,
+            west_o: INV,
+            south_o: INV,
+        }
+    }
 }

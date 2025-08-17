@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::hycube::{OpCode, XbarConfig};
+use crate::hycube::{Config, Configs, OpCode, XbarConfig};
 
 use super::{HyIns, XBarInput};
 
@@ -43,9 +43,47 @@ use super::{HyIns, XBarInput};
 /// |`WEST`       |  3 bits  |
 /// |`SOUTH`      |  3 bits  |
 /// |`EAST`       |  3 bits  |
-fn decode(str: &str) -> Vec<HyIns> {
-    // let A: HashMap<&str, i32>;
-    todo!()
+fn decode(s: &str) -> Configs {
+    let mut x: usize;
+    let mut y: usize;
+    let mut configs: Configs = vec![];
+    let mut config: Config = vec![];
+
+    for line in s.lines() {
+        if let Ok(_cfg_number) = line.parse::<i32>() {
+            configs.push(config.clone());
+            config = vec![];
+            continue;
+        }
+        if line.trim().is_empty() {
+            continue;
+        }
+        let (prefix, bits) = line.split_once(",").expect("Faulty Bin File!");
+        let (y_str, x_str) = prefix
+            .strip_prefix("Y=")
+            .unwrap()
+            .split_once(" X=")
+            .expect("Fault Bin File!");
+        x = x_str.parse().unwrap();
+        y = y_str.parse().unwrap();
+
+        // Grow outer vector
+        if y >= config.len() {
+            config.resize_with(y + 1, Vec::new);
+        }
+
+        // Grow inner vector
+        if x >= config[y].len() {
+            config[y].resize_with(x + 1, HyIns::default);
+        }
+        config[y][x] = decode_instr(bits);
+    }
+    configs.push(config);
+    // this is because the config number isn't a temrinator
+    // The first config is always empty...
+    configs.remove(0);
+    eprintln!("{configs:#?}");
+    configs
 }
 
 #[rustfmt::skip]
@@ -79,7 +117,8 @@ pub fn decode_instr(instr: &str) -> HyIns {
         south_o: to_xbar(south ),
     };
 
-    let decoded = HyIns{
+    
+    HyIns{
         xB: xb,
         reg_we:           regwen.chars().map(|c| -> bool { c=='1' }).collect::<Vec<bool>>().try_into().unwrap(), 
         reg_no_bypass: regbypass.chars().map(|c| -> bool { c=='1' }).collect::<Vec<bool>>().try_into().unwrap(),
@@ -89,9 +128,7 @@ pub fn decode_instr(instr: &str) -> HyIns {
         constValid: const_valid == "1",
         npb: npb == "1",
         treg_we: tregwen == "1",
-    };
-    eprintln!("{decoded:#?}");
-    decoded
+    }
 }
 
 pub fn next_chunk<'a>(s: &mut &'a str, n: usize) -> &'a str {
@@ -116,5 +153,49 @@ mod tests {
     fn test_decode_instr() {
         let input: &str = "0100000000000000001100110000111110000000000111111111111111111111";
         decode_instr(input);
+    }
+
+    #[test]
+    fn test_decode() {
+        let input: &str = r"
+0
+Y=0 X=0,1100000000000000001100110000111110000000000111111111111111111111
+Y=0 X=1,0100000000000000001100110000111110000000000111111111111111100111
+Y=0 X=2,0100000000000000001100110000111110000000000111111111111111111111
+Y=0 X=3,0100000000000000001100110000111110000000000111111111111111111111
+Y=1 X=0,0100000000000000001100110000111110000000000111111111111111111111
+Y=1 X=1,0100000000000000001100110000111110000000000111111001111111111100
+Y=1 X=2,0100000000000000001100110000111110000000000111001010011111111111
+Y=1 X=3,0100000000000000001100110000111110000000000111111111111111111111
+Y=2 X=0,0100000000000000001100110000111110000000000111111111000111111100
+Y=2 X=1,0100000000000000001100110000111110000000000111111010010001111100
+Y=2 X=2,0100000000000000001100110000111110000000000111111111010111101111
+Y=2 X=3,0100000000000000001100110000111110000000000111111111111111111111
+Y=3 X=0,0100000000000000001100110000111110000000000111111111111111111100
+Y=3 X=1,0100000000000000001100110000111110000000000111111010100111111010
+Y=3 X=2,0100000000000000001100110000111110000000000111111010111011111111
+Y=3 X=3,0100000000000000001100110000111110000000000111111111111111111111
+
+1
+Y=0 X=0,0100000000000000001100110000111110000000000111111111111111111111
+Y=0 X=1,0100000000000000001100110000111110000000000111111111111111100111
+Y=0 X=2,0100000000000000001100110000111110000000000111111111111111111111
+Y=0 X=3,0100000000000000001100110000111110000000000111111111111111111111
+Y=1 X=0,0100000000000000001100110000111110000000000111111111111111111111
+Y=1 X=1,0100000000000000001100110000111110000000000111111001111111111100
+Y=1 X=2,0100000000000000001100110000111110000000000111001010011111111111
+Y=1 X=3,0100000000000000001100110000111110000000000111111111111111111111
+Y=2 X=0,0100000000000000001100110000111110000000000111111111000111111100
+Y=2 X=1,0100000000000000001100110000111110000000000111111010010001111100
+Y=2 X=2,0100000000000000001100110000111110000000000111111111010111101111
+Y=2 X=3,0100000000000000001100110000111110000000000111111111111111111111
+Y=3 X=0,0100000000000000001100110000111110000000000111111111111111111100
+Y=3 X=1,0100000000000000001100110000111110000000000111111010100111111010
+Y=3 X=2,0100000000000000001100110000111110000000000111111010111011111111
+Y=3 X=3,0100000000000000001100110000111110000000000111111111111111111111
+
+";
+        decode(input);
+        assert!(false);
     }
 }
