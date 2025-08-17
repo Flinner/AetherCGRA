@@ -2,5 +2,6 @@
 name = "aether_cgra"
 version = "0.1.0"
 edition = "2024"
+authors = ["Flinner Yuu <flinner at nand.sh>"]
 
 [dependencies]

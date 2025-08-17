@@ -1,6 +1,8 @@
+pub mod decode;
 pub mod tile;
 
 #[derive(Debug)]
+#[repr(i32)]
 #[allow(clippy::upper_case_acronyms)]
 /// This is represented by HyCube as a byte.
 pub enum OpCode {
@@ -42,29 +44,30 @@ pub enum OpCode {
 #[allow(non_snake_case)]
 pub struct HyIns {
     xB: XbarConfig,
-    registers: [i8; 4],
+    reg_we: [bool; 4],
     /// `true` = get from register, `false` = bypass
     /// `std::map<Regs,uint8_t> regbypass; //1 = get it from reg and 0 = bypass`
-    registers_no_bypass: [bool; 4],
+    reg_no_bypass: [bool; 4],
     // TODO: what is tregwen
     // uint8_t tregwen;
+    treg_we: bool,
     opcode: OpCode,
     constant: i32,
     constValid: bool,
     // TODO: What is NPB
-    // bool NPB;
+    npb: bool,
 }
 
 #[derive(Debug)]
 #[allow(clippy::upper_case_acronyms, non_camel_case_types)]
 pub enum XBarInput {
-    NORTH_I,
-    EAST_I,
-    WEST_I,
-    SOUTH_I,
-    RES_I,
-    ALU_I,
-    INV,
+    EAST_I = 0,
+    SOUTH_I = 1,
+    WEST_I = 2,
+    NORTH_I = 3,
+    ALU_I = 4,
+    RES_I = 5,
+    INV = 7,
 }
 
 #[derive(Debug)]
